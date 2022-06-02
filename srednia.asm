@@ -1,6 +1,11 @@
-         [bits 32]
+[bits 32]
 
 ;        esp -> [ret]  ; ret - adres powrotu do asmloader
+
+min      equ 2
+max      equ 5
+zero     equ 0
+pol      equ __?float32?__(0.5)
 
          mov esi, 1  ; esi = 1
 
@@ -99,10 +104,29 @@ getaddr2:
          ja ocena           ; jump if above  ; jump if CF = 0 and ZF = 0
 
          fld qword[esp]     ; *(double*)(esp) = *(double*)addr_ocena = ocena -> st ; fpu load floating-point
-         
+
 ;        st = [st0] = [ocena]
 
 ;        now we know the number is in <1, 6> range
+
+;        checking if correct note
+
+         fld st0
+         
+         frndint
+
+         fsub st1
+
+         push zero
+
+;        esp -> [zero][ocena][esi][ret]
+
+         ficomp dword[esp]
+         add esp, 4
+         fstsw ax           ; ax = fpu_status_word ; fpu store status word
+         sahf               ; eflags(SF:ZF:AF:PF:CF) = ah
+         jne ocena
+         je load
 
 load     cmp esi, 1         ; esi - 1 ; OF SF ZF AF PF CF affected
 
@@ -129,7 +153,7 @@ skip:    add esp, 8          ; esp = esp + 4
 end:     dec esi             ; esi--
 
          push esi
-         
+
 ;        esp -> [esi][ret]
 
          fild dword[esp]     ; *(int*)esp = *(int*)addr_esi = esi -> st ; fpu load integer
@@ -177,7 +201,7 @@ getaddr3:
 ; 3 - printf
 ; 4 - scanf
 ;
-; To co funkcja zwróci jest w EAX.
+; To co funkcja zwr?ci jest w EAX.
 ; Po wywolaniu funkcji sciagamy argumenty ze stosu.
 ;
 ; https://gynvael.coldwind.pl/?id=387
